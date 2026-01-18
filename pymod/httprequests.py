@@ -57,18 +57,6 @@ class HttpRequests(object):
         m = self.routes[route_name][0]
         decoded = None
         try:
-#            # populate all requests with the X-Api-Key apikey header
-#            # if there is no defined headers dict in the reqkwargs, introduce it
-#            if "headers" not in reqkwargs:
-#                headers = {
-#                    "X-Api-Key": "{0}".format(self.apikey),
-#                    "Accept": "application/json"
-#                }
-#                reqkwargs["headers"] = headers
-#            else:
-#                # if the there are already other headers defined, just append the X-Api-Key one
-#                reqkwargs["headers"]["X-Api-Key"] = "{0}".format(self.apikey)
-
             reqmethod = getattr(requests, m)
             logger.debug(
                 "doing a "
@@ -79,9 +67,13 @@ class HttpRequests(object):
                 + str(params)
             )
             if self.parent.auth_mode == 0:
-                r = reqmethod(url, data=body, params=params, auth=requests.auth.HTTPBasicAuth(self.parent._creds.username, self.parent._creds.password), **reqkwargs)
+                r = reqmethod(
+                        url, data=body, params=params, auth=requests.auth.HTTPBasicAuth(
+                            self.parent._creds.username, self.parent._creds.password
+                            ),
+                        **reqkwargs)
             elif self.parent.auth_mode == 1:
-                #TODO
+                # TODO
                 raise NotImplementedError()
             else:
                 raise Exception("Unsupported authentication method")

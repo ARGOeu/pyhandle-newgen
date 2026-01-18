@@ -1,16 +1,10 @@
-import sys
 import json
-from datetime import datetime
 from typing import Optional, Union
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 from .exceptions import HandleException
 from .handles import Handles
 from .httprequests import HttpRequests
+
 
 class HandleCreds(object):
     @classmethod
@@ -70,7 +64,7 @@ class HandleClient(object):
             return cls(endpoint, creds)
 
     @property
-    def handles(self) -> Reports:
+    def handles(self) -> Handles:
         self._handles = self._handles or Handles(self)
         return self._handles
 

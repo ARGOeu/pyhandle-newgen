@@ -1,4 +1,9 @@
+from __future__ import annotations
+
+from typing import Union
+
 from .restresource import RestResourceItem, RestResourceList
+
 
 class Handles(RestResourceList):
     """Collection class for handles"""
@@ -8,11 +13,12 @@ class Handles(RestResourceList):
     def _fetch_args(self) -> list:
         return []
 
-    def _create_child(self, data):
+    def _create_child(self, data: dict):
         return Handle(self, data)
 
     def delete(self, handle: Union[str, Handle]):
         pass
+
 
 class HandleValues(RestResourceList):
     def __init__(self, parent: Handle):
@@ -33,6 +39,19 @@ class HandleValues(RestResourceList):
 
     def _fetch_args(self):
         return []
+
+    def _create_child(self, data: dict):
+        try:
+            vid = data["__fetch__"]
+        except Exception:
+            raise KeyError("id")
+
+        for i in self.items():
+            if i[1] is None:
+                continue
+            if i[1].id == vid:
+                return i[1]
+        raise KeyError(data["__fetch__"])
 
 
 class HandleValue(RestResourceItem):
@@ -83,7 +102,7 @@ class HandleValue(RestResourceItem):
 
     @data.setter
     def data(self, value):
-        self._data= value
+        self._data = value
 
     @property
     def ttl(self):

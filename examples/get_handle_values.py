@@ -7,7 +7,7 @@ from pyhandle_newgen import HandleClient
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net fetch example")
     parser.add_argument(
-        "--host",
+        "--endpoint",
         type=str,
         required=True,
         help="FQDN[:port][/path] of Argo HANDLE.net Service API",
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         password = args.password
 
     client = HandleClient.instantiate_with_username_and_password(
-            "{0}/{1}".format(args.host, args.prefix),
+            "{0}/{1}".format(args.endpoint, args.prefix),
             args.username,
             password
             )
@@ -43,5 +43,6 @@ if __name__ == "__main__":
     print("HANDLE:", handle.id)
     print("Values:")
     for v in handle.values:
-        if v is None: continue
+        if v is None:
+            continue
         print("  ", v.id, "→", v.data)

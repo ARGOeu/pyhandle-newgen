@@ -44,7 +44,18 @@ client = HandleClient.instantiate_with_username_and_password(
 
 ## Examples
 
-*TODO*
+In the `examples` folder, you may find the following library usage examples:
+
+* retrieving a HANDLE record and printing its values
+
+### Retrieving a HANDLE record and printing its values
+
+```bash
+python3 ./examples/get_handle_values.py --endpoint FQDN[:PORT]/PATH --prefix=THE_HANDLE_PREFIX --username=THE_USERNAME --password=PATH_TO_PWD_FILE -f --handle=THE_HANDLE_ID
+```
+
+replacing capitalized tokens with proper values, e.g. `python3 ./examples/get_handle_values.py --endpoint hdl.grnet.gr:8001/api/handles --prefix=21.T99999 --username=21.T99999/TESTUSER01 --password=~/.hdlpass -f --handle=test-handle
+`
 
 ## Environment variables
 
