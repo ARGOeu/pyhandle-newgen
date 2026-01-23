@@ -83,12 +83,15 @@ class HttpRequests(object):
 
     def _error_dict(self, response_content, status):
         try:
-            response = json.loads(response_content) if response_content else dict()
-            error_dict = {
-                    "code": status,
-                    "response_code": response["responseCode"],
-                    "message": self._handle_rc_to_str(response["responseCode"])
-                    }
+            if status == 200 or status == 201:
+                error_dict = json.loads(response_content) if response_content else dict()
+            else:
+                response = json.loads(response_content) if response_content else dict()
+                error_dict = {
+                        "code": status,
+                        "response_code": response["responseCode"],
+                        "message": self._handle_rc_to_str(response["responseCode"])
+                        }
         except ValueError:
             error_dict = {"code": status, "response_code": "0", "message": "Unknown Error"}
 
