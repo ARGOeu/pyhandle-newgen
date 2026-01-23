@@ -45,7 +45,6 @@ class TestHandles(unittest.TestCase):
         self.assertEqual(handle.values["HS_ADMIN"].data["index"], 301)
         self.assertEqual(handle.values["HS_ADMIN"].data["permissions"], '011111110011')
 
-
     def testViewHandle(self):
         with HTTMock(self.HandleMocks.view_handle_mock):
             handle = self.handle_client.handles["test-handle"]

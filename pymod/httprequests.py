@@ -42,11 +42,55 @@ class HttpRequests(object):
             ],
         }
 
+    def _handle_rc_to_str(self, rc):
+        rc_dict = {
+                "1": "Success",
+                "2": "Error",
+                "3": "Server Too Busy",
+                "4": "Protocol Error",
+                "5": "Operation Not Supported",
+                "6": "Recursion Count Too High",
+                "7": "Server Read-only",
+                "100": "Handle Not Found",
+                "101": "Handle Already Exists",
+                "102": "Invalid Handle",
+                "200": "Values Not Found",
+                "201": "Value Already Exists",
+                "202": "Invalid Value",
+                "300": "Out of Date Site Info",
+                "301": "Server Not Responsible",
+                "302": "Service Referral",
+                "303": "Prefix Referral",
+                "400": "Invalid Admin",
+                "401": "Insufficient Permissions",
+                "402": "Authentication Needed",
+                "403": "Authentication Failed",
+                "404": "Invalid Credential",
+                "405": "Authentication Timed Out",
+                "406": "Authentication Error",
+                "500": "Session Timeout",
+                "501": "Session Failed",
+                "502": "Invalid Session Key",
+                "504": "Invalid Session Setup Request",
+                "505": "Session Duplicate Msg Rejected"
+                }
+        try:
+            msg = rc_dict[str(rc)]
+        except Exception:
+            msg = "Unknown Error"
+
+        return msg
+
     def _error_dict(self, response_content, status):
         try:
-            error_dict = json.loads(response_content) if response_content else dict()
+            response = json.loads(response_content) if response_content else dict()
+            error_dict = {
+                    "code": status,
+                    "response_code": response["responseCode"],
+                    "message": self._handle_rc_to_str(response["responseCode"])
+                    }
         except ValueError:
-            error_dict = {"error": {"code": status, "message": response_content}}
+            error_dict = {"code": status, "response_code": "0", "message": "Unknown Error"}
 
         return error_dict
 

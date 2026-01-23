@@ -12,8 +12,12 @@ class HandleServiceException(HandleException):
         errord = dict()
 
         if json.get("message"):
-            self.msg = "While trying the [{0}]: {1}".format(request, json["message"])
+            self.msg = "While trying [{0}]: {1}".format(request, json["message"])
             errord.update(error=self.msg)
+
+        if json.get("response_code"):
+            self.rc = json["response_code"]
+            errord.update(response_code=self.rc)
 
         if json.get("code"):
             self.code = json["code"]
