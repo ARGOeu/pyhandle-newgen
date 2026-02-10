@@ -3,8 +3,10 @@ import os
 
 from .exceptions import (HandleConnectionException, HandleException,
                          HandleServiceException, HandleTimeoutException)
-from .handleclient import HandleClient
+from .handleclient import (HandleBasicCreds, HandleClient, HandleCreds,
+                           HandleX509Creds)
 from .handles import Handle, Handles
+from .pyhandleshim import PIDClientCredentials, PyHandleClient
 
 logger = logging.getLogger(__name__)
 if os.getenv("DEBUG") is not None and str(os.getenv("DEBUG")).lower() in [
@@ -28,6 +30,9 @@ else:
     logger.addHandler(logging.NullHandler())
 
 __all__ = [
+    "HandleBasicCreds",
+    "HandleCreds",
+    "HandleX509Creds",
     "HandleClient",
     "HandleConnectionException",
     "HandleException",
@@ -35,4 +40,6 @@ __all__ = [
     "HandleTimeoutException",
     "Handles",
     "Handle",
+    "PIDClientCredentials",
+    "PyHandleClient"
 ]

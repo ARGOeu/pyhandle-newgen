@@ -340,3 +340,14 @@ class RestResourceList(OrderedDict, RestResource):
 
     def __str__(self):
         return "[{0}]".format(", ".join([str(x) for x in list(self)]))
+
+    @abc.abstractmethod
+    def _delete_route(self) -> str:
+        """Abstract method to be implemented by subclasses, to denote the REST API route for DELETE requests
+        """
+        return ""
+
+    @abc.abstractmethod
+    def _delete_args(self) -> list:
+        """Abstract method to be implemented by subcasses, to provide values for params on the DELETE REST route"""
+        return []

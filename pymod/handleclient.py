@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+import os
 from typing import Optional, Union
 
 from .exceptions import HandleException
@@ -7,30 +10,49 @@ from .httprequests import HttpRequests
 
 
 class HandleCreds(object):
-    @classmethod
-    def load_from_JSON(cls, cred_file: str):
+    @staticmethod
+    def load_from_JSON(cred_file: str) -> HandleCreds:
         with open(cred_file) as f:
             j = json.load(f)
-        if "username" in j.keys and "password" in j.keys:
+        if "username" in j.keys() and "password" in j.keys():
             return HandleBasicCreds(j["username"], j["password"])
-        elif "private_key" in j.keys and "certificate_only" in j.keys:
+        elif "private_key" in j.keys() and "certificate_only" in j.keys():
             return HandleX509Creds(j["certificate_only"], j["private_key"])
+        elif "certificate_and_key" in j.keys():
+            return HandleX509Creds(j["certificate_and_key"], None)
         else:
-            raise HandleException("Missing credentials")
+            raise HandleException("Malformed credentials file")
 
 
 class HandleBasicCreds(HandleCreds):
-    def __init__(self, username, password):
+    def __init__(self, username, password, **kwargs):
         self.username = username
         self.password = password
 
+    @staticmethod
+    def load_from_json(self, json_filename: str):
+        j = json.loads(open(json_filename, 'r').read())
+        self.client = j.get('client', 'rest')
+        self.handle_server_url = j.get('handle_server_url')
+        self.username = j.get('username')
+        self.password = j.get('password')
+        self.prefix = j.get('prefix')
+        self.handleowner = j.get('handleowner')
+        self.private_key = j.get('private_key')
+        self.certificate_only = j.get('certificate_only')
+        self.certificate_and_key = j.get('certificate_and_key')
+
 
 class HandleX509Creds(HandleCreds):
-    def __init__(self, cert_path: str, key_path: str):
-        with open(cert_path) as f1:
-            self.crt = f1
-        with open(key_path) as f2:
-            self.key = f2
+    def __init__(self, cert_path: str, key_path: Optional[str], **kwargs):
+        OK = os.path.isfile(cert_path) and os.access(cert_path, os.R_OK)
+        if key_path is not None:
+            OK = OK and (os.path.isfile(key_path) and os.access(key_path, os.R_OK))
+        if not OK:
+            raise HandleException("Unable to find or access certificate or key file.")
+        else:
+            self.crt = cert_path
+            self.key = key_path
 
 
 class HandleClient(object):

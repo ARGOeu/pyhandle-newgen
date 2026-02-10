@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from typing import Union
 
 from .restresource import RestResourceItem, RestResourceList
+
+logger = logging.getLogger(__name__)
 
 
 class Handles(RestResourceList):
@@ -16,8 +19,30 @@ class Handles(RestResourceList):
     def _create_child(self, data: dict):
         return Handle(self, data)
 
+    def _delete_route(self):
+        return "delete_handle"
+
+    def _delete_args(self) -> list:
+        return [self._current_handle_id]
+
     def delete(self, handle: Union[str, Handle]):
-        pass
+        logger.debug("DELETING ITEM")
+        if isinstance(handle, str):
+            self._current_handle_id = handle
+        else:
+            self._current_handle_id = str(handle.id)
+        logger.debug(self.connection.routes[self._delete_route()][1].format(
+            self.handle_endpoint, *self._delete_args()
+            )
+         )
+        res = self.connection.make_request(
+            self.connection.routes[self._delete_route()][1].format(
+                self.handle_endpoint, *self._delete_args()
+            ),
+            self._delete_route(),
+            {}
+        )
+        return res
 
 
 class HandleValues(RestResourceList):

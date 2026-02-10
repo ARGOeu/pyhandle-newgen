@@ -47,6 +47,7 @@ client = HandleClient.instantiate_with_username_and_password(
 In the `examples` folder, you may find the following library usage examples:
 
 * retrieving a HANDLE record and printing its values
+* retrieving a HANDLE record and printing its values, using [PYHANDLE](https://docs.eudat.eu/b2handle/fordevelopers_pyhandle/) syntax
 
 ### Retrieving a HANDLE record and printing its values
 
@@ -56,6 +57,16 @@ python3 ./examples/get_handle_values.py --endpoint FQDN[:PORT]/PATH --prefix=THE
 
 replacing capitalized tokens with proper values, e.g. `python3 ./examples/get_handle_values.py --endpoint hdl.grnet.gr:8001/api/handles --prefix=21.T99999 --username=21.T99999/TESTUSER01 --password=~/.hdlpass -f --handle=test-handle
 `
+
+### Retrieving a HANDLE record and printing its values, using PYHANDLE syntax
+
+```bash
+python3 ./examples/get_handle_values_pyhandle.py --endpoint FQDN[:PORT]/PATH --creds PATH_TO_CREDENTIALS_JSON_FILE --handle=THE_HANDLE_ID
+```
+
+replacing capitalized tokens with proper values, e.g. `python3 ./examples/get_handle_values.py --creds=~/hdl_creds.json --handle=test-handle
+`
+
 
 ## Environment variables
 

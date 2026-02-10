@@ -2,7 +2,8 @@
 import sys
 from argparse import ArgumentParser
 
-from pyhandle_newgen import HandleClient, HandleServiceException
+from pyhandle_newgen import (HandleBasicCreds, HandleClient,
+                             HandleServiceException)
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net fetch example")
@@ -33,10 +34,12 @@ if __name__ == "__main__":
     else:
         password = args.password
 
-    client = HandleClient.instantiate_with_username_and_password(
+    client = HandleClient(
             "{0}/{1}".format(args.endpoint, args.prefix),
-            args.username,
-            password
+            HandleBasicCreds(
+                args.username,
+                password
+                )
             )
 
     try:

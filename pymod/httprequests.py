@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+import urllib.parse
 
 import requests
 
@@ -37,7 +38,7 @@ class HttpRequests(object):
                 "https://{0}/{1}",
             ],
             "delete_handle": [
-                "get",
+                "delete",
                 "https://{0}/{1}",
             ],
         }
@@ -115,13 +116,22 @@ class HttpRequests(object):
             )
             if self.parent.auth_mode == 0:
                 r = reqmethod(
-                        url, data=body, params=params, auth=requests.auth.HTTPBasicAuth(
-                            self.parent._creds.username, self.parent._creds.password
-                            ),
-                        **reqkwargs)
+                        url,
+                        data=body,
+                        params=params,
+                        auth=requests.auth.HTTPBasicAuth(
+                            urllib.parse.quote_plus(self.parent._creds.username),
+                            urllib.parse.quote_plus(self.parent._creds.password)),
+                        **reqkwargs
+                        )
             elif self.parent.auth_mode == 1:
-                # TODO
-                raise NotImplementedError()
+                if self.parent._creds.key is not None:
+                    cert = (self.parent._creds.crt, self.parent._creds.key)
+                else:
+                    cert = self.parent._creds.crt
+                r = reqmethod(
+                        url, data=body, params=params, cert=cert,
+                        **reqkwargs)
             else:
                 raise Exception("Unsupported authentication method")
 
