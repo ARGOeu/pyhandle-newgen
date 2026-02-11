@@ -347,7 +347,26 @@ class RestResourceList(OrderedDict, RestResource):
         """
         return ""
 
-    @abc.abstractmethod
-    def _delete_args(self) -> list:
-        """Abstract method to be implemented by subcasses, to provide values for params on the DELETE REST route"""
-        return []
+    def delete(self, item: Union[RestResourceItem, str]):
+        """
+        Removes a subresource from the resource list
+
+        This will issue an API request using the endpoint specified by the _delete_route property.
+        """
+        if self._delete_route != "":
+            if isinstance(item, RestResourceItem):
+                item_id = str(item.id)
+            elif isinstance(item, str):
+                item_id = str(item)
+            else:
+                raise TypeError("Unsupported parameter type")
+            res = self.connection.make_request(
+                self.connection.routes[self._delete_route()][1].format(
+                    self.handle_endpoint, item_id
+                ),
+                self._delete_route(),
+            )
+            ret = self._create_child(res)
+            return ret
+        else:
+            raise Exception("Operation not supported or not implemented")

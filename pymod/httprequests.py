@@ -15,7 +15,7 @@ class HttpRequests(object):
     """Class for HTTP requests to the Handle Service API"""
 
     def __init__(self, parent):
-        self.parent = parent
+        self._parent = parent
         self.routes = {
             "list_handles": [
                 "get",
@@ -90,8 +90,8 @@ class HttpRequests(object):
                 response = json.loads(response_content) if response_content else dict()
                 error_dict = {
                         "code": status,
-                        "response_code": response["responseCode"],
-                        "message": self._handle_rc_to_str(response["responseCode"])
+                        "response_code": response.get("responseCode") or 0,
+                        "message": self._handle_rc_to_str(response.get("responseCode"))
                         }
         except ValueError:
             error_dict = {"code": status, "response_code": "0", "message": "Unknown Error"}
@@ -114,21 +114,21 @@ class HttpRequests(object):
                 + " with params "
                 + str(params)
             )
-            if self.parent.auth_mode == 0:
+            if self._parent.auth_mode == 0:
                 r = reqmethod(
                         url,
                         data=body,
                         params=params,
                         auth=requests.auth.HTTPBasicAuth(
-                            urllib.parse.quote_plus(self.parent._creds.username),
-                            urllib.parse.quote_plus(self.parent._creds.password)),
+                            urllib.parse.quote_plus(self._parent._creds["username"]),
+                            urllib.parse.quote_plus(self._parent._creds["password"])),
                         **reqkwargs
                         )
-            elif self.parent.auth_mode == 1:
-                if self.parent._creds.key is not None:
-                    cert = (self.parent._creds.crt, self.parent._creds.key)
+            elif self._parent.auth_mode == 1:
+                if self._parent._creds.get("key") is not None:
+                    cert = (self._parent._creds["crt"], self._parent._creds["key"])
                 else:
-                    cert = self.parent._creds.crt
+                    cert = self._parent._creds["crt"]
                 r = reqmethod(
                         url, data=body, params=params, cert=cert,
                         **reqkwargs)
@@ -146,7 +146,7 @@ class HttpRequests(object):
             elif status_code == 401 or status_code == 403:
                 raise HandleServiceException(
                     json=self._error_dict(
-                        content or json.dumps({"message": "Auth failure"}),
+                        content or json.dumps({"responseCode": "403"}),
                         status_code,
                     ),
                     request=route_name,

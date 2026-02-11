@@ -3,18 +3,26 @@ import tempfile
 
 from httmock import HTTMock
 
-from pymod import HandleBasicCreds, HandleClient, HandleCreds, HandleX509Creds
+from pymod import HandleClient, HandleServiceException
 
 from .handlemocks import HandleMocks, TestHandlesBase
 
 
 class TestHandles(TestHandlesBase):
     def setUp(self):
-        self.handle_client = HandleClient.instantiate_with_username_and_password(
-                "localhost/api/handles/21.T99999",
-                "21.T99999/TESTUSER01",
-                "s3cr3t")
+        self.handle_client = HandleClient.withBasicAuth(
+            "localhost/api/handles/21.T99999",
+            "301:21.T99999/TESTUSER01",
+            "s3cr3t")
         self.HandleMocks = HandleMocks()
+
+    def testAuthFail(self):
+        with HTTMock(self.HandleMocks.view_handle_mock):
+            handle_client = HandleClient.withBasicAuth(
+                "localhost/api/handles/21.T99999",
+                "301:21.T99999/TESTUSER01",
+                "S3CR3T")
+            self.assertRaises(HandleServiceException, handle_client.retrieve_handle_record, "test-handle")
 
     def testViewHandle(self):
         with HTTMock(self.HandleMocks.view_handle_mock):
@@ -92,11 +100,14 @@ class TestHandles(TestHandlesBase):
 
     def testLoadFromJSONUserPass(self):
         with tempfile.NamedTemporaryFile(mode="w") as tf:
-            tf.write('{"username":"21.T99999/TESTUSER01","password":"s3cr3t"}')
+            tf.write(
+                """{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "username":"301:21.T99999/TESTUSER01","""
+                """ "password":"s3cr3t"}"""
+                )
             tf.seek(0)
-            creds = HandleCreds.load_from_JSON(tf.name)
+            HandleClient.withConfig(tf.name)
             tf.close()
-            assert isinstance(creds, HandleBasicCreds)
 
     def testLoadFromJSONCertKey(self):
         with (
@@ -104,22 +115,39 @@ class TestHandles(TestHandlesBase):
                 tempfile.NamedTemporaryFile() as cf,
                 tempfile.NamedTemporaryFile() as kf
                 ):
-            tf.write('{{"certificate_only":"{0}","private_key":"{1}"}}'.format(cf.name, kf.name))
+            tf.write(
+                """{{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "certificate_only":"{0}","""
+                """ "private_key":"{1}"}}""".format(cf.name, kf.name)
+                )
             tf.seek(0)
-            creds = HandleCreds.load_from_JSON(tf.name)
+            HandleClient.withConfig(tf.name)
             tf.close()
             cf.close()
             kf.close()
-            assert isinstance(creds, HandleX509Creds)
 
     def testLoadFromJSONCertOnly(self):
         with (
                 tempfile.NamedTemporaryFile(mode="w") as tf,
                 tempfile.NamedTemporaryFile() as cf
                 ):
-            tf.write('{{"certificate_and_key":"{0}"}}'.format(cf.name))
+            tf.write(
+                """{{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "certificate_and_key":"{0}"}}""".format(cf.name)
+                )
             tf.seek(0)
-            creds = HandleCreds.load_from_JSON(tf.name)
+            HandleClient.withConfig(tf.name)
             tf.close()
             cf.close()
-            assert isinstance(creds, HandleX509Creds)
+
+    def testDeleteHandleStr(self):
+        with HTTMock(self.HandleMocks.delete_handle_mock):
+            self.handle_client.handles.delete("test-handle")
+
+    def testDeleteHandleObj(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.delete_handle_mock
+                ):
+            handle = self.handle_client.handles["test-handle"]
+            self.handle_client.handles.delete(handle)

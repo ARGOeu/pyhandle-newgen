@@ -2,7 +2,7 @@ import json
 from typing import Optional
 
 from .exceptions import HandleException
-from .handleclient import HandleBasicCreds, HandleClient, HandleCreds
+from .handleclient import HandleClient
 
 
 class PIDClientCredentials(object):
@@ -47,10 +47,9 @@ class PyHandleClient(object):
 
     @staticmethod
     def instantiate_with_username_and_password(endpoint: str, username: str, password: str):
-        return HandleClient(endpoint, HandleBasicCreds(username, password))
+        return HandleClient.withBasicAuth(endpoint, username=username, password=password)
 
     @staticmethod
     def instantiate_with_credentials(creds: PIDClientCredentials):
-        endpoint = "{0}/{1}".format(creds.get_server_URL(), creds.get_prefix())
         json_filename = creds._config["conf_file"]
-        return HandleClient(endpoint, HandleCreds.load_from_JSON(json_filename))
+        return HandleClient.withConfig(json_filename)

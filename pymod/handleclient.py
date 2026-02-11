@@ -1,89 +1,102 @@
 from __future__ import annotations
 
 import json
-import os
-from typing import Optional, Union
+from typing import Optional
 
 from .exceptions import HandleException
 from .handles import Handles
 from .httprequests import HttpRequests
 
 
-class HandleCreds(object):
-    @staticmethod
-    def load_from_JSON(cred_file: str) -> HandleCreds:
-        with open(cred_file) as f:
-            j = json.load(f)
-        if "username" in j.keys() and "password" in j.keys():
-            return HandleBasicCreds(j["username"], j["password"])
-        elif "private_key" in j.keys() and "certificate_only" in j.keys():
-            return HandleX509Creds(j["certificate_only"], j["private_key"])
-        elif "certificate_and_key" in j.keys():
-            return HandleX509Creds(j["certificate_and_key"], None)
-        else:
-            raise HandleException("Malformed credentials file")
-
-
-class HandleBasicCreds(HandleCreds):
-    def __init__(self, username, password, **kwargs):
-        self.username = username
-        self.password = password
-
-    @staticmethod
-    def load_from_json(self, json_filename: str):
-        j = json.loads(open(json_filename, 'r').read())
-        self.client = j.get('client', 'rest')
-        self.handle_server_url = j.get('handle_server_url')
-        self.username = j.get('username')
-        self.password = j.get('password')
-        self.prefix = j.get('prefix')
-        self.handleowner = j.get('handleowner')
-        self.private_key = j.get('private_key')
-        self.certificate_only = j.get('certificate_only')
-        self.certificate_and_key = j.get('certificate_and_key')
-
-
-class HandleX509Creds(HandleCreds):
-    def __init__(self, cert_path: str, key_path: Optional[str], **kwargs):
-        OK = os.path.isfile(cert_path) and os.access(cert_path, os.R_OK)
-        if key_path is not None:
-            OK = OK and (os.path.isfile(key_path) and os.access(key_path, os.R_OK))
-        if not OK:
-            raise HandleException("Unable to find or access certificate or key file.")
-        else:
-            self.crt = cert_path
-            self.key = key_path
-
-
 class HandleClient(object):
     """Module main class, to access the REST API"""
 
-    def __init__(self, endpoint: str, creds: HandleCreds):
-        self._handle_endpoint = endpoint
-        self._conn = HttpRequests(self)
-        self._handles: Optional[Handles] = None
-        self._creds = creds
-        if isinstance(creds, HandleBasicCreds):
+    def __init__(self, **kwargs):
+        """
+        General purpose contructor, called by static constructor methods
+        """
+        if kwargs.get("endpoint") is None:
+            raise HandleException("Missing required initialization argument 'endpoint'")
+        if kwargs.get("username") is not None and kwargs.get("password") is not None:
             self.auth_mode = 0
-        elif isinstance(creds, HandleX509Creds):
+            self._creds = {
+                    "username": kwargs["username"],
+                    "password": kwargs["password"]
+                    }
+            self._conn = HttpRequests(self)
+        elif kwargs.get("certificate_only") is not None and kwargs.get("private_key") is not None:
             self.auth_mode = 1
+            self._creds = {
+                    "crt": kwargs["certificate_only"],
+                    "key": kwargs["private_key"]
+                    }
+            self._conn = HttpRequests(self)
+        elif kwargs.get('certificate_and_key') is not None:
+            self.auth_mode = 1
+            self._creds = {"crt": kwargs["certificate_and_key"]}
+            self._conn = HttpRequests(self)
         else:
             raise HandleException("Unsupported authentication method")
 
-    @classmethod
-    def instantiate_with_username_and_password(cls, endpoint: str, username: str, password: str):
-        return cls(endpoint, HandleBasicCreds(username, password))
+        self._handle_prefix = kwargs.get("prefix")
+        self._handle_endpoint = kwargs["endpoint"]
+        if self._handle_prefix is not None:
+            if not self._handle_endpoint.endswith(self._handle_prefix):
+                self._handle_endpoint = "{0}/{1}".format(self._handle_endpoint, self._handle_prefix)
+        self._handle_owner = kwargs.get("handleowner")
+        self._handles: Optional[Handles] = None
 
     @classmethod
-    def instantiate_with_certificate(cls, endpoint: str, cert_path: str, key_path: str):
-        return cls(endpoint, HandleX509Creds(cert_path, key_path))
+    def withConfig(cls, config_filename: str, **kwargs):
+        """
+        Initialize a HandleClient from a JSON config file, optionally specifying
+        additional configuration parameters. Parameters passed in kwargs will override
+        those in the config file, if present
+        """
+        try:
+            with open(config_filename, 'r')as config_file:
+                j = json.loads(config_file.read())
+                return cls(
+                        endpoint=kwargs.get('handle_server_url') or j.get('handle_server_url'),
+                        prefix=kwargs.get('prefix') or j.get('prefix'),
+                        username=kwargs.get('username') or j.get('username'),
+                        password=kwargs.get('password') or j.get('password'),
+                        private_key=kwargs.get('private_key') or j.get('private_key'),
+                        certificate_only=kwargs.get('certificate_only') or j.get('certificate_only'),
+                        certificate_and_key=kwargs.get('certificate_and_key') or j.get('certificate_and_key'),
+                        handleowner=kwargs.get('handleowner') or j.get('handleowner')
+                        )
+        except OSError as e:
+            raise HandleException("Unable to load configuration file: {0}".format(repr(e)))
+        except Exception as e:
+            raise HandleException("Unexpected error while loading configuration: {0}".format(repr(e)))
 
     @classmethod
-    def instantiate_with_credentials(cls, endpoint: str, creds: Union[str, HandleCreds]):
-        if isinstance(creds, str):
-            return cls(endpoint, HandleCreds.load_from_JSON(creds))
-        else:
-            return cls(endpoint, creds)
+    def withBasicAuth(cls, endpoint: str, username: str, password: str, **kwargs):
+        """
+        Initialize a HandleClient which will use Basic Authentication
+        """
+        return cls(
+                endpoint=endpoint,
+                username=username,
+                password=password,
+                **kwargs
+                )
+
+    @classmethod
+    def withX509Auth(cls, endpoint: str, cert: str, key: Optional[str], **kwargs):
+        """
+        Initialize a HandleClient which will use x509 Authentication
+
+        If no key file is provided, the cert file is expected to hold
+        the combined certificate and key
+        """
+        return cls(
+                endpoint=endpoint,
+                cert=cert,
+                key=key,
+                **kwargs
+                )
 
     @property
     def handles(self) -> Handles:
@@ -99,7 +112,13 @@ class HandleClient(object):
         return self._handle_endpoint
 
     def retrieve_handle_record(self, handle: str):
+        """PYHANDLE compatibility function"""
         return self.handles[handle]
 
     def get_value_from_handle(self, handle: str, key: str):
+        """PYHANDLE compatibility function"""
         return self.handles[handle].values[key].data
+
+    def delete_handle(self, handle: str):
+        """PYHANDLE compatibility function"""
+        return self.handles.delete(handle)

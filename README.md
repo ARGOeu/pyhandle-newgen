@@ -48,6 +48,7 @@ In the `examples` folder, you may find the following library usage examples:
 
 * retrieving a HANDLE record and printing its values
 * retrieving a HANDLE record and printing its values, using [PYHANDLE](https://docs.eudat.eu/b2handle/fordevelopers_pyhandle/) syntax
+* deleting a HANDLE record
 
 ### Retrieving a HANDLE record and printing its values
 
@@ -65,6 +66,15 @@ python3 ./examples/get_handle_values_pyhandle.py --endpoint FQDN[:PORT]/PATH --c
 ```
 
 replacing capitalized tokens with proper values, e.g. `python3 ./examples/get_handle_values.py --creds=~/hdl_creds.json --handle=test-handle
+`
+
+### Deleting a HANDLE record
+
+```bash
+python3 ./examples/delete_handle.py --endpoint FQDN[:PORT]/PATH --prefix=THE_HANDLE_PREFIX --username=THE_USERNAME --password=PATH_TO_PWD_FILE -f --handle=THE_HANDLE_ID
+```
+
+replacing capitalized tokens with proper values, as in the first example.
 `
 
 

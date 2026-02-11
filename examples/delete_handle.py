@@ -21,6 +21,11 @@ if __name__ == "__main__":
         help="treat password argument as a path to a file holding the actual password",
         action="store_true",
     )
+    parser.add_argument(
+        "-y",
+        help="assume yes to all questions",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     if args.f:
@@ -41,12 +46,24 @@ if __name__ == "__main__":
 
     try:
         handle = client.handles[args.handle]
-        print("HANDLE:", handle.id)
-        print("Values:")
-        for v in handle.values:
-            if v is None:
-                continue
-            print("  ", v.id, "→", v.data)
+        if not args.y:
+            print("Handle", handle.id, "with the following data, will be deleted:")
+            print()
+            print("HANDLE:", handle.id)
+            print("Values:")
+            for v in handle.values:
+                if v is None:
+                    continue
+                print("  ", v.id, "→", v.data)
+            print()
+            do_del = input("Are you sure? [y/N] ")
+        else:
+            do_del = "y"
+        if do_del == "y":
+            client.handles.delete(handle)
+            print("Handle", handle.id, "deleted")
+        else:
+            print("Delete operation aborted")
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)

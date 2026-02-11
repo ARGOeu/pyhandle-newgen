@@ -1,9 +1,27 @@
+import base64
 import unittest
+import urllib.parse
 
 from httmock import response, urlmatch
 
+from pymod import HandleServiceException
+
 
 class HandleMocks(object):
+    def _mock_auth(self, url, request):
+        if not ("Authorization" in request.headers.keys() and "Basic {0}".format(
+                base64.b64encode(
+                    (
+                        urllib.parse.quote_plus("301:21.T99999/TESTUSER01") + ":" + urllib.parse.quote_plus("s3cr3t")
+                        ).encode("ascii")).decode("ascii")) == request.headers['Authorization']):
+            raise HandleServiceException({
+                "code": 403,
+                "response_code": 403,
+                "message": "Authentication Failure"
+                },
+                request=request.url,
+            )
+
     VIEW_HANDLE_RESPONSE = (
         """{"responseCode":1,"handle":"21.T99999/test-handle","values":[{"index":1,"type":"URL","data":"""
         """{"format":"string","value":"https://www.example.com"},"ttl":86400,"timestamp":"2026-01-07T18:47:40Z"}"""
@@ -22,7 +40,23 @@ class HandleMocks(object):
     def view_handle_mock(self, url, request):
         assert url.path == "/api/handles/21.T99999/test-handle"
         assert request.method == "GET"
+        self._mock_auth(url, request)
         return response(200, self.VIEW_HANDLE_RESPONSE, None, None, 5, request)
+
+    DELETE_HANDLE_RESPONSE = (
+        """{"responseCode":1,"handle":"21.T99999/test-handle"}"""
+        )
+
+    delete_handle_urlmatch = dict(
+        netloc="localhost", path="/api/handles/21.T99999/test-handle", method="DELETE"
+    )
+
+    @urlmatch(**delete_handle_urlmatch)
+    def delete_handle_mock(self, url, request):
+        assert url.path == "/api/handles/21.T99999/test-handle"
+        assert request.method == "DELETE"
+        self._mock_auth(url, request)
+        return response(200, self.DELETE_HANDLE_RESPONSE, None, None, 5, request)
 
 
 class TestHandlesBase(unittest.TestCase):

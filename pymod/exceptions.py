@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class HandleException(Exception):
     """Base exception class for all Handle service related errors"""
 
@@ -9,19 +12,25 @@ class HandleServiceException(HandleException):
     """Exception for Handle Service API errors"""
 
     def __init__(self, json, request):
-        errord = dict()
+        errord: dict[str, Union[str, int]] = {}
 
         if json.get("message"):
             self.msg = "While trying [{0}]: {1}".format(request, json["message"])
             errord.update(error=self.msg)
+        else:
+            self.msg = "Unknown error"
 
         if json.get("response_code"):
             self.rc = json["response_code"]
             errord.update(response_code=self.rc)
+        else:
+            self.rc = 0
 
         if json.get("code"):
             self.code = json["code"]
             errord.update(status_code=self.code)
+        else:
+            self.code = 0
 
         super(HandleServiceException, self).__init__(errord)
 

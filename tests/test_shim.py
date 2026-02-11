@@ -11,7 +11,7 @@ class TestPyHandles(TestHandlesBase):
     def setUp(self):
         self.handle_client = PyHandleClient('rest').instantiate_with_username_and_password(
                 "localhost/api/handles/21.T99999",
-                "21.T99999/TESTUSER01",
+                "301:21.T99999/TESTUSER01",
                 "s3cr3t")
         self.HandleMocks = HandleMocks()
 
@@ -27,9 +27,17 @@ class TestPyHandles(TestHandlesBase):
 
     def testLoadFromJSON(self):
         with tempfile.NamedTemporaryFile(mode="w") as tf:
-            tf.write('{"username":"21.T99999/TESTUSER01","password":"s3cr3t"}')
+            tf.write(
+                """{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "username":"301:21.T99999/TESTUSER01","""
+                """ "password":"s3cr3t"}"""
+                )
             tf.seek(0)
             cred = PIDClientCredentials.load_from_JSON(tf.name)
             client = PyHandleClient('rest').instantiate_with_credentials(cred)
             tf.close()
             assert isinstance(client, HandleClient)
+
+    def testDeleteHandle(self):
+        with HTTMock(self.HandleMocks.delete_handle_mock):
+            self.handle_client.delete_handle("test-handle")
