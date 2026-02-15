@@ -45,7 +45,7 @@ class TestHandles(TestHandlesBase):
                 json.loads(jsons)
             except json.decoder.JSONDecodeError:
                 self.fail("Invalid JSON representation")
-            self.assertTrue('"id": "URL"' in jsons)
+            self.assertTrue('"name": "URL"' in jsons)
             self.assertTrue('"data_type": "string"' in jsons)
             self.assertTrue('"ttl": 86400' in jsons)
             self.assertTrue('"timestamp": "2026-01-07T18:47:40Z"' in jsons)
@@ -56,7 +56,7 @@ class TestHandles(TestHandlesBase):
                 json.loads(jsons)
             except json.decoder.JSONDecodeError:
                 self.fail("Invalid JSON representation")
-            self.assertTrue('"id": "title"' in jsons)
+            self.assertTrue('"name": "title"' in jsons)
             self.assertTrue('"data_type": "string"' in jsons)
             self.assertTrue('"ttl": 86400' in jsons)
             self.assertTrue('"timestamp": "2026-01-07T18:47:40Z"' in jsons)
@@ -67,7 +67,7 @@ class TestHandles(TestHandlesBase):
                 json.loads(jsons)
             except json.decoder.JSONDecodeError:
                 self.fail("Invalid JSON representation")
-            self.assertTrue('"id": "description"' in jsons)
+            self.assertTrue('"name": "description"' in jsons)
             self.assertTrue('"data_type": "string"' in jsons)
             self.assertTrue('"ttl": 86400' in jsons)
             self.assertTrue('"timestamp": "2026-01-07T18:47:40Z"' in jsons)
@@ -78,7 +78,7 @@ class TestHandles(TestHandlesBase):
                 json.loads(jsons)
             except json.decoder.JSONDecodeError:
                 self.fail("Invalid JSON representation")
-            self.assertTrue('"id": "HS_ADMIN"' in jsons)
+            self.assertTrue('"name": "HS_ADMIN"' in jsons)
             self.assertTrue('"data_type": "admin"' in jsons)
             self.assertTrue('"ttl": 86400' in jsons)
             self.assertTrue('"timestamp": "2026-01-07T18:47:40Z"' in jsons)
@@ -90,13 +90,13 @@ class TestHandles(TestHandlesBase):
         with HTTMock(self.HandleMocks.view_handle_mock):
             handle = self.handle_client.handles["test-handle"]
             self.assertIsNotNone(handle)
-            self.assertEqual(handle.values[1].id, "URL")
+            self.assertEqual(handle.values[1].name, "URL")
 
-    def testGetHandleValueById(self):
+    def testGetHandleValueByName(self):
         with HTTMock(self.HandleMocks.view_handle_mock):
             handle = self.handle_client.handles["test-handle"]
             self.assertIsNotNone(handle)
-            self.assertEqual(handle.values["URL"].data, "https://www.example.com")
+            self.assertEqual(handle.values.by_name("URL")[0].data, "https://www.example.com")
 
     def testLoadFromJSONUserPass(self):
         with tempfile.NamedTemporaryFile(mode="w") as tf:
@@ -151,3 +151,29 @@ class TestHandles(TestHandlesBase):
                 ):
             handle = self.handle_client.handles["test-handle"]
             self.handle_client.handles.delete(handle)
+
+    def testDeleteHandleValueByIndex(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.delete_handle_mock
+                ):
+            self.handle_client.handles["test-handle"].values.delete(
+                    self.handle_client.handles["test-handle"].values[1]
+                    )
+
+    def testDeleteHandleValueByName(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.delete_handle_mock
+                ):
+            self.handle_client.handles["test-handle"].values.delete(
+                    self.handle_client.handles["test-handle"].values.by_name("URL")[0]
+                    )
+
+    def testDeleteHandleHSAdminValue(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.delete_handle_mock
+                ):
+            v = self.handle_client.handles["test-handle"].values.by_name("HS_ADMIN")[0]
+            self.assertRaises(Exception, self.handle_client.handles["test-handle"].values.delete, v)

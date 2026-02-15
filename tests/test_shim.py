@@ -41,3 +41,10 @@ class TestPyHandles(TestHandlesBase):
     def testDeleteHandle(self):
         with HTTMock(self.HandleMocks.delete_handle_mock):
             self.handle_client.delete_handle("test-handle")
+
+    def testDeleteHandleValue(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.delete_handle_mock
+                ):
+            self.handle_client.delete_handle_value("test-handle", "URL")

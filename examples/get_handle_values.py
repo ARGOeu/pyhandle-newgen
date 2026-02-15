@@ -46,7 +46,7 @@ if __name__ == "__main__":
         for v in handle.values:
             if v is None:
                 continue
-            print("  ", v.id, "→", v.data)
+            print("[{0}]".format(v.id), v.name, "→", v.data)
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)

@@ -41,6 +41,10 @@ class HttpRequests(object):
                 "delete",
                 "https://{0}/{1}",
             ],
+            "delete_handle_value": [
+                "delete",
+                "https://{0}/{1}?index={2}",
+            ],
         }
 
     def _handle_rc_to_str(self, rc):

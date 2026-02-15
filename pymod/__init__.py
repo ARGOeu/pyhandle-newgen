@@ -4,7 +4,7 @@ import os
 from .exceptions import (HandleConnectionException, HandleException,
                          HandleServiceException, HandleTimeoutException)
 from .handleclient import HandleClient
-from .handles import Handle, Handles
+from .handles import Handle, Handles, HandleValue
 from .pyhandleshim import PIDClientCredentials, PyHandleClient
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ __all__ = [
     "HandleTimeoutException",
     "Handles",
     "Handle",
+    "HandleValue",
     "PIDClientCredentials",
     "PyHandleClient"
 ]

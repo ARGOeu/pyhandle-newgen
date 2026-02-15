@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import json
 import logging
@@ -166,7 +168,7 @@ class RestResourceList(OrderedDict, RestResource):
         self._current_page = 0
         self._cache = OrderedDict()
 
-    def refresh(self):
+    def refresh(self) -> RestResourceList:
         """Clear the internal dict, the cache dict, and reset paging"""
         self.clear()
         self._cache.clear()
@@ -309,7 +311,8 @@ class RestResourceList(OrderedDict, RestResource):
         try:
             tmp = self.__getitem__(id)
         finally:
-            return tmp or default
+            pass
+        return tmp or default
 
     def add(self, item: Union[RestResourceItem, dict, str]):
         """
@@ -347,7 +350,10 @@ class RestResourceList(OrderedDict, RestResource):
         """
         return ""
 
-    def delete(self, item: Union[RestResourceItem, str]):
+    def _delete_args(self) -> list:
+        return []
+
+    def delete(self, item: Union[RestResourceItem, str]) -> RestResourceList:
         """
         Removes a subresource from the resource list
 
@@ -355,18 +361,17 @@ class RestResourceList(OrderedDict, RestResource):
         """
         if self._delete_route != "":
             if isinstance(item, RestResourceItem):
-                item_id = str(item.id)
+                item_id = str(self._get_item_id(item))
             elif isinstance(item, str):
                 item_id = str(item)
             else:
                 raise TypeError("Unsupported parameter type")
-            res = self.connection.make_request(
+            self.connection.make_request(
                 self.connection.routes[self._delete_route()][1].format(
-                    self.handle_endpoint, item_id
+                    self.handle_endpoint, *[*self._delete_args(), item_id]
                 ),
                 self._delete_route(),
             )
-            ret = self._create_child(res)
-            return ret
+            return self
         else:
             raise Exception("Operation not supported or not implemented")

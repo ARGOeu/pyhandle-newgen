@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
+from typing import Optional, Union
 
 from .exceptions import HandleException
 from .handles import Handles
@@ -117,8 +117,20 @@ class HandleClient(object):
 
     def get_value_from_handle(self, handle: str, key: str):
         """PYHANDLE compatibility function"""
-        return self.handles[handle].values[key].data
+        return self.handles[handle].values.by_name(key)[0].data
 
     def delete_handle(self, handle: str):
         """PYHANDLE compatibility function"""
         return self.handles.delete(handle)
+
+    def delete_handle_value(self, handle: str, key: Union[list, str]):
+        """PYHANDLE compatibility function"""
+        h = self.handles[handle]
+        if not isinstance(key, list):
+            keys = [key]
+        else:
+            keys = key
+        for k in keys:
+            values = h.values.by_name(k)
+            for v in values:
+                h.values.delete(v)

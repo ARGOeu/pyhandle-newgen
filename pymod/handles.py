@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Union
 
 from .restresource import RestResourceItem, RestResourceList
 
@@ -23,6 +24,7 @@ class Handles(RestResourceList):
 
 
 class HandleValues(RestResourceList):
+    """Collection class for handle values"""
     def __init__(self, parent: Handle):
         super().__init__(parent, 1)
         self._fetch()
@@ -55,17 +57,44 @@ class HandleValues(RestResourceList):
                 return i[1]
         raise KeyError(data["__fetch__"])
 
+    def _delete_args(self) -> list:
+        return [self._parent.id]
+
     def _delete_route(self):
-        # TODO
-        raise NotImplementedError
+        return "delete_handle_value"
+
+    def delete(self, item: Union[RestResourceItem, str]) -> RestResourceList:
+        if (isinstance(item, str) and item == "HS_ADMIN") or (
+                isinstance(item, HandleValue) and item.name == "HS_ADMIN"
+                ):
+            raise Exception("Illegal operation")
+        else:
+            return super().delete(item)
+
+    def by_name(self, name: str) -> list[HandleValue] | None:
+        """
+        Return a list of HandleValue instances that match the provided 'name' argument.
+        If no value matches, then None is returned
+        """
+        ret = []
+        for i in self.items():
+            if i[1] is None:
+                continue
+            if i[1].name == name:
+                ret.append(i[1])
+        if len(ret) == 0:
+            return None
+        else:
+            return ret
 
 
 class HandleValue(RestResourceItem):
+    """Representation class for handle values"""
     def __init__(self, parent: HandleValues, data={}):
         super().__init__(parent, data)
         if data is not None:
-            self._index = data["index"]
-            self._id = data["type"]
+            self._id = data["index"]
+            self._name = data["type"]
             self._data_type = data["data"]["format"]
             self._data = data["data"]["value"]
             self._ttl = data["ttl"]
@@ -87,12 +116,12 @@ class HandleValue(RestResourceItem):
         self._id = value
 
     @property
-    def index(self):
-        return self._index
+    def name(self):
+        return self._name
 
-    @index.setter
-    def index(self, value):
-        self._index = value
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def data_type(self):
@@ -128,6 +157,7 @@ class HandleValue(RestResourceItem):
 
 
 class Handle(RestResourceItem):
+    """Representation class for handle entries"""
     def __init__(self, parent, data: dict):
         super().__init__(parent, data)
         delattr(self, "responseCode")
