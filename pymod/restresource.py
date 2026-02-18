@@ -149,7 +149,6 @@ class RestResourceItem(RestResource):
         )
         return res
 
-
 class RestResourceList(OrderedDict, RestResource):
     """
     Base class for REST API responses representing a paged list of items.

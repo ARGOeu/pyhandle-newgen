@@ -92,14 +92,27 @@ class HandleValue(RestResourceItem):
     """Representation class for handle values"""
     def __init__(self, parent: HandleValues, data={}):
         super().__init__(parent, data)
+        print("Initializing HandleValue with data:", data)
         if data is not None:
             self._id = data["index"]
             self._name = data["type"]
-            self._data_type = data["data"]["format"]
+            self._type = data["data"]["format"]
             self._data = data["data"]["value"]
-            self._ttl = data["ttl"]
-            self._timestamp = data["timestamp"]
+            self._ttl = data.get("ttl", 86400)
+            self._timestamp = data.get("timestamp","")
             delattr(self, "type")
+
+    def to_dict(self) -> dict:
+        return {
+            "index": self._id,
+            "type": self._name,
+            "data": {
+                "format": self._type,
+                "value": self._data
+            },
+            "ttl": self._ttl,
+            "timestamp": self._timestamp
+        }
 
     def _fetch_route(self):
         return None
@@ -125,11 +138,11 @@ class HandleValue(RestResourceItem):
 
     @property
     def data_type(self):
-        return self._data_type
+        return self._type
 
     @data_type.setter
     def data_type(self, value):
-        self._data_type = value
+        self._type = value
 
     @property
     def data(self):
@@ -160,8 +173,8 @@ class Handle(RestResourceItem):
     """Representation class for handle entries"""
     def __init__(self, parent, data: dict):
         super().__init__(parent, data)
-        delattr(self, "responseCode")
-        delattr(self, "handle")
+        # delattr(self, "responseCode")
+        # delattr(self, "handle")
 
     def _fetch_route(self):
         return "get_handle_record"

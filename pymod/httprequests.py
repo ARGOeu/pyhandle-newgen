@@ -95,7 +95,8 @@ class HttpRequests(object):
                 error_dict = {
                         "code": status,
                         "response_code": response.get("responseCode") or 0,
-                        "message": self._handle_rc_to_str(response.get("responseCode"))
+                        "message": self._handle_rc_to_str(response.get("responseCode")),
+                        "details": response.get("message", "Unknown Error")
                         }
         except ValueError:
             error_dict = {"code": status, "response_code": "0", "message": "Unknown Error"}
@@ -121,7 +122,7 @@ class HttpRequests(object):
             if self._parent.auth_mode == 0:
                 r = reqmethod(
                         url,
-                        data=body,
+                        json=body,
                         params=params,
                         auth=requests.auth.HTTPBasicAuth(
                             urllib.parse.quote_plus(self._parent._creds["username"]),
@@ -134,7 +135,7 @@ class HttpRequests(object):
                 else:
                     cert = self._parent._creds["crt"]
                 r = reqmethod(
-                        url, data=body, params=params, cert=cert,
+                        url, json=body, params=params, cert=cert,
                         **reqkwargs)
             else:
                 raise Exception("Unsupported authentication method")
