@@ -1,0 +1,6 @@
+graft pymod
+graft examples
+include README.md
+include pyhandle-newgen.spec
+
+recursive-exclude pymod *.pyc *.pyo

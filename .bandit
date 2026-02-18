@@ -1,0 +1,3 @@
+[bandit]
+exclude = */tests/*.py
+tests = B101
