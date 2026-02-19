@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import Union
 
@@ -21,6 +22,90 @@ class Handles(RestResourceList):
 
     def _delete_route(self):
         return "delete_handle"
+
+    def _add_route(self):
+        return "register_handle"
+
+    def _add_args(self):
+        return [self.__add_handle]
+
+    def add(self, item: RestResourceItem | dict | str):
+        # FIXME: Map object value names to API value names
+        # e.g. data_type -> format
+        if isinstance(item, dict):
+            data = item
+            self.__add_handle = item["handle"]
+            del data["handle"]
+        elif isinstance(item, RestResourceItem):
+            json_str = '{{"values": [{0}]}}'.format(', '.join(str(x) for x in getattr(item, 'values')))
+            data = json.loads(json_str)
+            self.__add_handle = item.id
+            del data["id"]
+        elif isinstance(item, str):
+            data = json.loads(item)
+            self.__add_handle = data["handle"]
+            del data["handle"]
+        else:
+            raise TypeError("Unsupported parameter type")
+
+        # Remove any values of "HS_ADMIN" type
+        try:
+            for i in reversed(range(len(data["values"]))):
+                if data["values"][i]["type"] == "HS_ADMIN":
+                    del data["values"][i]
+        except Exception:
+            pass
+
+        # Add a proper "HS_ADMIN" value
+        data["values"].append(self.__create_admin_entry())
+
+        return super().add(data)
+
+    def __create_admin_entry(self):
+        '''
+        Create an entry of type "HS_ADMIN".
+
+        :return: The entry as a dict.
+        '''
+        # If the handle owner is specified, use it. Otherwise, use 200:0.NA/prefix
+        # With the prefix taken from the handle that is being created, not from anywhere else.
+        if self._parent._handle_owner is None:
+            adminindex = 200
+            prefix = self.__add_handle.split('/')[0]
+            adminhandle = '0.NA/' + prefix
+        else:
+            split = self._parent._handle_owner.split(':')
+            if len(split) == 2:
+                try:
+                    adminindex = int(split[0])
+                except ValueError:
+                    raise Exception("Invalid handle syntax for handle owner")
+                adminhandle = split[1]
+            elif len(split) == 1:
+                adminindex = 200
+                adminhandle = split[0]
+            elif len(split) > 2:
+                raise Exception("Invalid handle syntax for handle owner")
+
+        data = {
+                'value': {
+                    'index': adminindex,
+                    'handle': adminhandle,
+                    'permissions': self._parent._admin_permissions
+                    },
+                'format': 'admin'
+                }
+
+        # FIXME: Find an index between [100, 200) not used by other provided values
+        # instead of using a hard-coded value of 100
+        index = 100
+        entry = {'index': index, 'type': 'HS_ADMIN', 'data': data}
+
+        # FIXME: support TTL for HS_ADMIN
+        # if ttl is not None:
+        #     entry['ttl'] = ttl
+
+        return entry
 
 
 class HandleValues(RestResourceList):

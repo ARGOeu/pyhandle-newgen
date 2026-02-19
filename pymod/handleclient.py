@@ -44,6 +44,7 @@ class HandleClient(object):
             if not self._handle_endpoint.endswith(self._handle_prefix):
                 self._handle_endpoint = "{0}/{1}".format(self._handle_endpoint, self._handle_prefix)
         self._handle_owner = kwargs.get("handleowner")
+        self._admin_permissions = kwargs.get("admin_permissions", "011111110011")
         self._handles: Optional[Handles] = None
 
     @classmethod
@@ -64,7 +65,8 @@ class HandleClient(object):
                         private_key=kwargs.get('private_key') or j.get('private_key'),
                         certificate_only=kwargs.get('certificate_only') or j.get('certificate_only'),
                         certificate_and_key=kwargs.get('certificate_and_key') or j.get('certificate_and_key'),
-                        handleowner=kwargs.get('handleowner') or j.get('handleowner')
+                        handleowner=kwargs.get('handleowner') or j.get('handleowner'),
+                        admin_permissions=kwargs.get('admin_permissions') or j.get('admin_permissions')
                         )
         except OSError as e:
             raise HandleException("Unable to load configuration file: {0}".format(repr(e)))
@@ -134,3 +136,17 @@ class HandleClient(object):
             values = h.values.by_name(k)
             for v in values:
                 h.values.delete(v)
+
+    def register_handle(self, handle, location, checksum=None, additional_URLs=None, overwrite=False, **extratypes):
+        """PYHANDLE compatibility function"""
+        data = {"handle": handle, "values": []}
+        data["values"].append({
+                "index": 1,
+                "type": "URL",
+                "data": {
+                    "format": "string",
+                    "value": "location"
+                    }
+                })
+        # FIXME: support the rest of the method arguments
+        self.handles.add(data)
