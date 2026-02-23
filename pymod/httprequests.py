@@ -109,7 +109,17 @@ class HttpRequests(object):
         m = self.routes[route_name][0]
         decoded = None
         try:
+            if "headers" not in reqkwargs:
+                if m == "put":
+                    headers = {
+                        "Content-Type": "application/json"
+                    }
+                    reqkwargs["headers"] = headers
+            else:
+                if m == "put":
+                    reqkwargs["headers"]["Content-Type"] = "application/json"
             reqmethod = getattr(requests, m)
+
             logger.debug(
                 "doing a "
                 + reqmethod.__name__
@@ -117,7 +127,10 @@ class HttpRequests(object):
                 + url
                 + " with params "
                 + str(params)
+                + " and body"
+                + str(body)
             )
+
             if self._parent.auth_mode == 0:
                 r = reqmethod(
                         url,
