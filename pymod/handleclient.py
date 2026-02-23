@@ -139,17 +139,39 @@ class HandleClient(object):
 
     def register_handle(self, handle, location, checksum=None, additional_URLs=None, overwrite=False, **extratypes):
         """PYHANDLE compatibility function"""
-        data = {"handle": handle, "values": []}
-        data["values"].append({
-                "index": 1,
+
+        if not overwrite and self.retrieve_handle_record(handle) is not None:
+            raise Exception("Handle already exists, cannot overwrite")
+
+        if additional_URLs is not None:
+            raise NotImplementedError('No support for argument "additional_URLs"!')
+
+        values = list()
+        location_value = {
                 "type": "URL",
                 "data": {
                     "format": "string",
-                    "value": "location"
+                    "value": location
                     }
-                })
-        # FIXME: support the rest of the method arguments
-        self.handles.add(data)
+                }
+        values.append(location_value)
+
+        if checksum is not None:
+            checksum_value = {
+                    "type": "CHECKSUM",
+                    "data": {
+                        "format": "string",
+                        "value": checksum
+                        }
+                    }
+            values.append(checksum_value)
+
+        if extratypes is not None:
+            for key, value in extratypes.items():
+                values.append({"type": key, "data": value})
+
+        data = {"handle": handle, "values": values}
+        return self.handles.add(data)
 
     def add_handle_value(self, handle, ttl=None, **kvpairs):
         """PYHANDLE compatibility function"""
