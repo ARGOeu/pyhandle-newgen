@@ -16,14 +16,11 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=True, help="username")
     parser.add_argument("--password", type=str, required=True, help="password")
     parser.add_argument("--handle", type=str, required=True, help="handle")
+    parser.add_argument("--name", type=str, required=True, help="handle value name")
+    parser.add_argument("--data", type=str, required=True, help="handle value data")
     parser.add_argument(
         "-f",
         help="treat password argument as a path to a file holding the actual password",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--json",
-        help="print output as HANDLE JSON string",
         action="store_true",
     )
     args = parser.parse_args()
@@ -46,15 +43,18 @@ if __name__ == "__main__":
 
     try:
         handle = client.handles[args.handle]
-        if args.json:
-            print(handle.to_hdl_json())
+        handle_values = list(handle.values.by_name(args.name))
+        if len(handle_values) > 0:
+            handle_value = handle_values[0]
+            handle_value.data = args.data
+            handle_value.update()
         else:
-            print("HANDLE:", handle.id)
-            print("Values:")
-            for v in handle.values:
-                if v is None:
-                    continue
-                print("[{0}]".format(v.id), v.name, "→", v.data)
+            raise Exception("No `{0}' value found for requested handle".format(args.name))
+        print("New handle values:")
+        for v in handle.values:
+            if v is None:
+                continue
+            print("[{0}]".format(v.id), v.name, "→", v.data)
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)

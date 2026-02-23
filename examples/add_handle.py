@@ -2,7 +2,7 @@
 import sys
 from argparse import ArgumentParser
 
-from pyhandle_newgen import HandleClient, HandleServiceException
+from pyhandle_newgen import Handle, HandleClient, HandleServiceException
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net fetch example")
@@ -43,12 +43,11 @@ if __name__ == "__main__":
             )
 
     try:
-        handle = client.handles.add({
+        handle = client.handles.add(Handle(data={
             "handle": args.handle,
             "values": [
-                # FIXME: Use values from command line
                 {
-                    "index": 1,
+                    "index": 1,  # index #1 is reserved for the handle URL
                     "type": "URL",
                     "data": {
                         "format": "string",
@@ -56,7 +55,12 @@ if __name__ == "__main__":
                         }
                     },
                 ]
-            })
+            }))
+        print("New handle:")
+        for v in handle.values:
+            if v is None:
+                continue
+            print("[{0}]".format(v.id), v.name, "→", v.data)
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)
