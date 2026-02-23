@@ -4,7 +4,7 @@ import json
 from typing import Optional, Union
 
 from .exceptions import HandleException
-from .handles import Handles
+from .handles import Handles, HandleValue
 from .httprequests import HttpRequests
 
 
@@ -119,7 +119,7 @@ class HandleClient(object):
 
     def get_value_from_handle(self, handle: str, key: str):
         """PYHANDLE compatibility function"""
-        return self.handles[handle].values.by_name(key)[0].data
+        return list(self.handles[handle].values.by_name(key))[0].data
 
     def delete_handle(self, handle: str):
         """PYHANDLE compatibility function"""
@@ -150,3 +150,56 @@ class HandleClient(object):
                 })
         # FIXME: support the rest of the method arguments
         self.handles.add(data)
+
+    def add_handle_value(self, handle, ttl=None, **kvpairs):
+        """PYHANDLE compatibility function"""
+        for key, newval in kvpairs.items():
+            h = self.handles[handle]
+            v = HandleValue()
+            v.name = key
+            v.data = newval
+            if ttl is not None:
+                v.ttl = ttl
+            h.values.add(v, overwrite=False)
+
+    def modify_or_add_handle_value(self, handle, ttl=None, **kvpairs):
+        """PYHANDLE compatibility function"""
+        for key, newval in kvpairs.items():
+            h = self.handles[handle]
+            v = HandleValue()
+            v.name = key
+            v.data = newval
+            if ttl is not None:
+                v.ttl = ttl
+            h.values.add(v, overwrite=True)
+
+    def modify_handle_value_not_add(self, handle, ttl=None, **kvpairs):
+        """PYHANDLE compatibility function"""
+        for key, newval in kvpairs.items():
+            h = self.handles[handle]
+            v = HandleValue()
+            v.name = key
+            v.data = newval
+            if ttl is not None:
+                v.ttl = ttl
+            if len(list(h.values.by_name(key))) > 0:
+                h.values.add(v, overwrite=True)
+            else:
+                raise Exception("Cannot modify unexisting handle")
+            h.values.add(v, overwrite=True)
+
+    def modify_handle_value(self, handle, ttl=None, add_if_not_exist=True, **kvpairs):
+        """PYHANDLE compatibility function"""
+        for key, newval in kvpairs.items():
+            h = self.handles[handle]
+            v = HandleValue()
+            v.name = key
+            v.data = newval
+            if ttl is not None:
+                v.ttl = ttl
+            if not add_if_not_exist:
+                if len(list(h.values.by_name(key))) > 0:
+                    h.values.add(v, overwrite=True)
+                else:
+                    raise Exception("Cannot modify unexisting handle")
+            h.values.add(v, overwrite=True)

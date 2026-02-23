@@ -3,7 +3,7 @@ import tempfile
 
 from httmock import HTTMock
 
-from pymod import HandleClient, HandleServiceException
+from pymod import Handle, HandleClient, HandleServiceException, HandleValue
 
 from .handlemocks import HandleMocks, TestHandlesBase
 
@@ -96,7 +96,7 @@ class TestHandles(TestHandlesBase):
         with HTTMock(self.HandleMocks.view_handle_mock):
             handle = self.handle_client.handles["test-handle"]
             self.assertIsNotNone(handle)
-            self.assertEqual(handle.values.by_name("URL")[0].data, "https://www.example.com")
+            self.assertEqual(list(handle.values.by_name("URL"))[0].data, "https://www.example.com")
 
     def testLoadFromJSONUserPass(self):
         with tempfile.NamedTemporaryFile(mode="w") as tf:
@@ -167,7 +167,7 @@ class TestHandles(TestHandlesBase):
                 self.HandleMocks.delete_handle_mock
                 ):
             self.handle_client.handles["test-handle"].values.delete(
-                    self.handle_client.handles["test-handle"].values.by_name("URL")[0]
+                    list(self.handle_client.handles["test-handle"].values.by_name("URL"))[0]
                     )
 
     def testDeleteHandleHSAdminValue(self):
@@ -175,5 +175,128 @@ class TestHandles(TestHandlesBase):
                 self.HandleMocks.view_handle_mock,
                 self.HandleMocks.delete_handle_mock
                 ):
-            v = self.handle_client.handles["test-handle"].values.by_name("HS_ADMIN")[0]
+            v = list(self.handle_client.handles["test-handle"].values.by_name("HS_ADMIN"))[0]
             self.assertRaises(Exception, self.handle_client.handles["test-handle"].values.delete, v)
+
+    def testRegisterHandle(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            h = self.handle_client.handles.add(
+                    Handle(
+                        self.handle_client, {
+                            "handle": "test-handle",
+                            "values": [
+                                {
+                                    "index": 1,
+                                    "type": "URL",
+                                    "data": {
+                                        "format": "string",
+                                        "value": "https://www.example.com"
+                                        }
+                                    },
+                                ]
+                            }
+                        )
+                    )
+            self._validateHandle(h)
+
+    def testRegisterHandleByDict(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            h = self.handle_client.handles.add(
+                    {
+                        "handle": "test-handle",
+                        "values": [
+                            {
+                                "index": 1,
+                                "type": "URL",
+                                "data": {
+                                    "format": "string",
+                                    "value": "https://www.example.com"
+                                    }
+                                },
+                            ]
+                        }
+                    )
+            self._validateHandle(h)
+
+    def testRegisterHandleNoHSADMIN(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            h = Handle(
+                    self.handle_client, {
+                        "handle": "test-handle",
+                        "values": [
+                            {
+                                "index": 1,
+                                "type": "URL",
+                                "data": {
+                                    "format": "string",
+                                    "value": "https://www.example.com"
+                                    }
+                                }, {
+                                "index": 100,
+                                "type": "HS_ADMIN",
+                                "data": {
+                                    "format": "admin",
+                                    "value": {
+                                      "handle": "21.T15999/TESTUSER08",
+                                      "index": 301,
+                                      "permissions": "011111110011"
+                                      }
+                                    }
+                                }
+                            ]
+                        }
+                    )
+            self.assertRaises(Exception, self.handle_client.handles["test-handle"].values.add, h)
+
+    def testAddHandleValue(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            handle = self.handle_client.handles["test-handle"]
+            new_val = HandleValue()
+            new_val.name = "alttitle"
+            new_val.data = "ALTTEST"
+            handle.values.add(new_val)
+            handle_values2 = list(handle.values.by_name("alttitle"))
+            self.assertTrue(len(handle_values2) > 0)
+            self.assertEqual(handle_values2[0].data, "ALTTEST")
+
+    def testUpdateHandleValue(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            handle = self.handle_client.handles["test-handle"]
+            handle_values = list(handle.values.by_name("title"))
+            self.assertTrue(len(handle_values) > 0)
+            handle_value = handle_values[0]
+            handle_value.data = "TEST2"
+            handle_value.update()
+            handle_values2 = list(handle.values.by_name("title"))
+            self.assertTrue(len(handle_values2) > 0)
+            self.assertEqual(handle_values2[0].data, "TEST2")
+
+    def testUpdateHandle(self):
+        with HTTMock(
+                self.HandleMocks.view_handle_mock,
+                self.HandleMocks.register_handle_mock
+                ):
+            handle = self.handle_client.handles["test-handle"]
+            handle_values = list(handle.values.by_name("title"))
+            self.assertTrue(len(handle_values) > 0)
+            handle_value = handle_values[0]
+            handle_value.data = "TEST2"
+            handle.update()
+            handle_values2 = list(handle.values.by_name("title"))
+            self.assertTrue(len(handle_values2) > 0)
+            self.assertEqual(handle_values2[0].data, "TEST2")

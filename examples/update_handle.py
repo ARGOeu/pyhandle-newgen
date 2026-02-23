@@ -21,11 +21,6 @@ if __name__ == "__main__":
         help="treat password argument as a path to a file holding the actual password",
         action="store_true",
     )
-    parser.add_argument(
-        "--json",
-        help="print output as HANDLE JSON string",
-        action="store_true",
-    )
     args = parser.parse_args()
 
     if args.f:
@@ -46,15 +41,12 @@ if __name__ == "__main__":
 
     try:
         handle = client.handles[args.handle]
-        if args.json:
-            print(handle.to_hdl_json())
-        else:
-            print("HANDLE:", handle.id)
-            print("Values:")
-            for v in handle.values:
-                if v is None:
-                    continue
-                print("[{0}]".format(v.id), v.name, "→", v.data)
+        for v in handle.values:
+            if v is None:
+                continue
+            if v.data_type == "string" and v.data.startswith("http://"):
+                v.data = v.data.replace("http://", "https://")
+        handle.update()
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)

@@ -2,7 +2,7 @@
 import sys
 from argparse import ArgumentParser
 
-from pyhandle_newgen import HandleClient, HandleServiceException
+from pyhandle_newgen import HandleClient, HandleServiceException, HandleValue
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net fetch example")
@@ -16,14 +16,13 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=True, help="username")
     parser.add_argument("--password", type=str, required=True, help="password")
     parser.add_argument("--handle", type=str, required=True, help="handle")
+    parser.add_argument("--name", type=str, required=True, help="handle value name")
+    parser.add_argument("--data", type=str, required=True, help="handle value data")
+    parser.add_argument("--idx", type=int, required=False, help="optional handle value index")
+    parser.add_argument("--force", help="overwrite existing values", action="store_true")
     parser.add_argument(
         "-f",
         help="treat password argument as a path to a file holding the actual password",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--json",
-        help="print output as HANDLE JSON string",
         action="store_true",
     )
     args = parser.parse_args()
@@ -46,15 +45,17 @@ if __name__ == "__main__":
 
     try:
         handle = client.handles[args.handle]
-        if args.json:
-            print(handle.to_hdl_json())
-        else:
-            print("HANDLE:", handle.id)
-            print("Values:")
-            for v in handle.values:
-                if v is None:
-                    continue
-                print("[{0}]".format(v.id), v.name, "→", v.data)
+        new_val = HandleValue()
+        new_val.name = args.name
+        new_val.data = args.data
+        newidx = args.idx if args.idx else 0
+        force = True if args.force else False
+        handle.values.add(new_val, idx=newidx, overwrite=force)
+        print("New handle values:")
+        for v in handle.values:
+            if v is None:
+                continue
+            print("[{0}]".format(v.id), v.name, "→", v.data)
     except HandleServiceException as e:
         if e.rc == 100:
             print("Service Error: handle `{0}' not found".format(args.handle), file=sys.stderr)

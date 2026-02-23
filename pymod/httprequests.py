@@ -33,11 +33,15 @@ class HttpRequests(object):
                 "get",
                 "https://{0}/{1}?index={2}",
             ],
-            "update_handle": [
-                "post",
-                "https://{0}/{1}",
+            "update_handle_record": [
+                "put",
+                "https://{0}/{1}?index=various",
             ],
-            "delete_handle": [
+            "update_handle_value": [
+                "put",
+                "https://{0}/{1}?index={2}&overwrite={3}",
+            ],
+            "delete_handle_record": [
                 "delete",
                 "https://{0}/{1}",
             ],
@@ -130,7 +134,7 @@ class HttpRequests(object):
                 + " and body"
                 + str(body)
             )
-
+#            if reqmethod.__name__ != "get": exit()
             if self._parent.auth_mode == 0:
                 r = reqmethod(
                         url,

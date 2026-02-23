@@ -70,7 +70,7 @@ class RestResourceItem(RestResource):
         """
         logger.debug("Initing RestResourceItem object " + str(type(self)))
         self._parent = parent
-        self.id = None
+        self._id: int | None = None
         if len(data) == 1 and data.get("__fetch__") is not None:
             self.id = data["__fetch__"]
             data = self._fetch()
@@ -148,6 +148,48 @@ class RestResourceItem(RestResource):
             self._fetch_params(),
         )
         return res
+
+    def _serialize(self) -> str:
+        """
+        Abstract method to be implemented by subclasses, to return a JSON string, which is appropriate for sending
+        to the API endpoint in order to add / update the object
+        """
+        raise Exception("Operation not supported or not implemented")
+
+    def _update_route(self) -> str:
+        """Abstract method to be implemented by subclasses, to denote the REST API route for POST requests
+
+        Should return the key from the parent service object route dict, that corresponds to the REST route
+        """
+        raise Exception("Operation not supported or not implemented")
+
+    def _update_args(self) -> list:
+        """Abstract method to be implemented by subcasses, to provide values for params on the POST REST route"""
+        raise Exception("Operation not supported or not implemented")
+
+    def update(self):
+        """
+        Updates the state of a new subresource under the resource list
+
+        This will issue an API request using the endpoint specified by the _upate_route property,
+        put/post'ing a JSON representation of the given item. If the request succeedes, the appropriate
+        RestResourceItem subclassed object will be returned, populated with the response's data
+        """
+        j = json.loads(self._serialize())
+        if "handle" in j.keys():
+            del j["handle"]
+        body = json.dumps(j)
+        if self._update_route != "":
+            self.connection.make_request(
+                self.connection.routes[self._update_route()][1].format(
+                    self.handle_endpoint, *self._update_args()
+                ),
+                self._update_route(),
+                body=body,
+            )
+            return self
+        else:
+            raise Exception("Operation not supported or not implemented")
 
 
 class RestResourceList(OrderedDict, RestResource):
@@ -264,10 +306,11 @@ class RestResourceList(OrderedDict, RestResource):
 
     def __iter__(self):
         """Iterate over all results, using self::_fetch for each page"""
-        self._current_page = 0
+        iter_page = 0
         logger.debug("ITERING")
-        while self._current_page < self._page_count:
-            self._fetch()
+        while iter_page < self._page_count:
+            if self._current_page < self._page_count:
+                self._fetch()
             logger.debug(
                 "PAGE " + str(self._current_page) + " of " + str(self._page_count)
             )
@@ -277,6 +320,7 @@ class RestResourceList(OrderedDict, RestResource):
                 for i, j in enumerate(self.items()):
                     if i >= (self._current_page - 1) * self._page_size:
                         yield j[1]
+            iter_page += 1
         logger.debug("EOD")
 
     def __getitem__(self, id):
