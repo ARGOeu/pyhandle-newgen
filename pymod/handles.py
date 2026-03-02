@@ -63,6 +63,13 @@ class Handles(RestResourceList):
         # Add a proper "HS_ADMIN" value
         data["values"].append(self.__create_admin_entry())
 
+        # Assign the proper index to each entry that does not have an index
+        for entry in data["values"]:
+            if entry.get("index") is None:
+                entry_type = entry["type"]
+                entry["index"] = self.__make_another_index(
+                        data["values"], url=(entry_type == "URL"), hs_admin=(entry_type == "HS_ADMIN"))
+
         super().add(data)
 
         return self[self.__add_handle]
@@ -102,16 +109,51 @@ class Handles(RestResourceList):
                 'format': 'admin'
                 }
 
-        # FIXME: Find an index between [100, 200) not used by other provided values
-        # instead of using a hard-coded value of 100
-        index = 100
-        entry = {'index': index, 'type': 'HS_ADMIN', 'data': data}
-
-        # FIXME: support TTL for HS_ADMIN
-        # if ttl is not None:
-        #     entry['ttl'] = ttl
+        entry = {'type': 'HS_ADMIN', 'data': data}
 
         return entry
+
+    def __make_another_index(self, list_of_entries, url=False, hs_admin=False):
+        """
+        Find an index not yet used in the handle record and not reserved for
+            any (other) special type.
+
+        :param: list_of_entries: List of all entries to find which indices are
+            used already.
+        :param url: If True, an index for an URL entry is returned (1, unless
+            it is already in use).
+        :param hs_admin: If True, an index for HS_ADMIN is returned (100 or one
+            of the following).
+        :return: An integer.
+        """
+
+        start = 2
+
+        # reserved indices:
+        reserved_for_url = {1}
+        reserved_for_admin = set(range(100, 200))
+        prohibited_indices = reserved_for_url | reserved_for_admin
+
+        if url:
+            prohibited_indices = prohibited_indices - reserved_for_url
+            start = 1
+        elif hs_admin:
+            prohibited_indices = prohibited_indices - reserved_for_admin
+            start = 100
+
+        # existing indices
+        existing_indices = set()
+        if list_of_entries is not None:
+            for entry in list_of_entries:
+                if entry.get("index") is not None:
+                    existing_indices.add(int(entry['index']))
+
+        # find new index:
+        all_prohibited_indices = existing_indices | prohibited_indices
+        search_max = max(start, max(all_prohibited_indices)) + 2
+        for index in range(start, search_max):
+            if index not in all_prohibited_indices:
+                return index
 
 
 class HandleValues(RestResourceList):
