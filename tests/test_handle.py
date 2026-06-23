@@ -1,5 +1,6 @@
 import json
 import tempfile
+from unittest import mock
 
 from httmock import HTTMock
 
@@ -300,3 +301,87 @@ class TestHandles(TestHandlesBase):
             handle_values2 = list(handle.values.by_name("title"))
             self.assertTrue(len(handle_values2) > 0)
             self.assertEqual(handle_values2[0].data, "TEST2")
+
+    def testHTTPSVerifyDefaultsToTrue(self):
+        # When not specified, HTTPS_verify should default to True
+        self.assertIs(self.handle_client._https_verify, True)
+
+    def testHTTPSVerifyExplicitFalse(self):
+        # An explicit False must be preserved (not coerced to the default)
+        client = HandleClient.withBasicAuth(
+            "localhost/api/handles/21.T99999",
+            "301:21.T99999/TESTUSER01",
+            "s3cr3t",
+            HTTPS_verify=False)
+        self.assertIs(client._https_verify, False)
+
+    def testHTTPSVerifyPath(self):
+        # A CA bundle path string must be passed through verbatim
+        ca_path = "/etc/ssl/certs/ca-bundle.pem"
+        client = HandleClient.withBasicAuth(
+            "localhost/api/handles/21.T99999",
+            "301:21.T99999/TESTUSER01",
+            "s3cr3t",
+            HTTPS_verify=ca_path)
+        self.assertEqual(client._https_verify, ca_path)
+
+    def testHTTPSVerifyFromConfigFile(self):
+        # HTTPS_verify should be read from the JSON config file
+        with tempfile.NamedTemporaryFile(mode="w") as tf:
+            tf.write(
+                """{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "username":"301:21.T99999/TESTUSER01","""
+                """ "password":"s3cr3t","""
+                """ "HTTPS_verify": false}"""
+                )
+            tf.seek(0)
+            client = HandleClient.withConfig(tf.name)
+            tf.close()
+        self.assertIs(client._https_verify, False)
+
+    def testHTTPSVerifyKwargOverridesConfigFile(self):
+        # An explicit False kwarg must override a True value in the config file
+        # (regression guard against the buggy `kwargs.get(x) or j.get(x)` idiom)
+        with tempfile.NamedTemporaryFile(mode="w") as tf:
+            tf.write(
+                """{"handle_server_url": "https://localhost/api/handles/21.T99999","""
+                """ "username":"301:21.T99999/TESTUSER01","""
+                """ "password":"s3cr3t","""
+                """ "HTTPS_verify": true}"""
+                )
+            tf.seek(0)
+            client = HandleClient.withConfig(tf.name, HTTPS_verify=False)
+            tf.close()
+        self.assertIs(client._https_verify, False)
+
+    def testHTTPSVerifyForwardedToRequest(self):
+        # The client-level HTTPS_verify must reach requests as the `verify` kwarg
+        client = HandleClient.withBasicAuth(
+            "localhost/api/handles/21.T99999",
+            "301:21.T99999/TESTUSER01",
+            "s3cr3t",
+            HTTPS_verify=False)
+        with mock.patch("pymod.httprequests.requests.get") as mock_get:
+            fake_resp = mock.Mock()
+            fake_resp.content = self.HandleMocks.VIEW_HANDLE_RESPONSE
+            fake_resp.status_code = 200
+            mock_get.return_value = fake_resp
+            mock_get.__name__ = "get"
+            client.handles["test-handle"]
+            self.assertTrue(mock_get.called)
+            _, kwargs = mock_get.call_args
+            self.assertIn("verify", kwargs)
+            self.assertIs(kwargs["verify"], False)
+
+    def testHTTPSVerifyDefaultForwardedToRequest(self):
+        # With no HTTPS_verify specified, requests should receive verify=True
+        with mock.patch("pymod.httprequests.requests.get") as mock_get:
+            fake_resp = mock.Mock()
+            fake_resp.content = self.HandleMocks.VIEW_HANDLE_RESPONSE
+            fake_resp.status_code = 200
+            mock_get.return_value = fake_resp
+            mock_get.__name__ = "get"
+            self.handle_client.handles["test-handle"]
+            self.assertTrue(mock_get.called)
+            _, kwargs = mock_get.call_args
+            self.assertIs(kwargs.get("verify"), True)

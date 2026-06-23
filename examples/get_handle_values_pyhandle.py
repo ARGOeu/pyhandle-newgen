@@ -5,14 +5,31 @@ from argparse import ArgumentParser
 from pyhandle_newgen import (HandleServiceException, PIDClientCredentials,
                              PyHandleClient)
 
+
+def https_verify_arg(value):
+    """Parse --https-verify: 'true'/'false' (bool) or a path to a CA bundle file/dir."""
+    low = value.strip().lower()
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    return value
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net PYHANDLE compatibility fetch example")
     parser.add_argument("--creds", type=str, required=True, help="json credentials file")
     parser.add_argument("--handle", type=str, required=True, help="handle")
+    parser.add_argument(
+        "--https-verify",
+        type=https_verify_arg,
+        default=True,
+        help="'true'/'false', or a path to a CA bundle file/dir. Defaults to true",
+    )
     args = parser.parse_args()
 
     cred = PIDClientCredentials.load_from_JSON(args.creds)
-    client = PyHandleClient('rest').instantiate_with_credentials(cred)
+    client = PyHandleClient('rest').instantiate_with_credentials(cred, HTTPS_verify=args.https_verify)
 
     try:
         handle = client.handles[args.handle]

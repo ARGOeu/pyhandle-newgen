@@ -46,10 +46,10 @@ class PyHandleClient(object):
             raise ValueError("Supported client types: 'rest'")
 
     @staticmethod
-    def instantiate_with_username_and_password(endpoint: str, username: str, password: str):
-        return HandleClient.withBasicAuth(endpoint, username=username, password=password)
+    def instantiate_with_username_and_password(endpoint: str, username: str, password: str, **kwargs):
+        return HandleClient.withBasicAuth(endpoint, username=username, password=password, **kwargs)
 
     @staticmethod
-    def instantiate_with_credentials(creds: PIDClientCredentials):
+    def instantiate_with_credentials(creds: PIDClientCredentials, **kwargs):
         json_filename = creds._config["conf_file"]
-        return HandleClient.withConfig(json_filename)
+        return HandleClient.withConfig(json_filename, **kwargs)

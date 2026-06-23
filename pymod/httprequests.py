@@ -122,6 +122,9 @@ class HttpRequests(object):
             else:
                 if m == "put":
                     reqkwargs["headers"]["Content-Type"] = "application/json"
+            # Apply the client-level HTTPS_verify setting (True | False | CA-bundle path).
+            # setdefault lets an explicit per-call `verify` in reqkwargs win if provided.
+            reqkwargs.setdefault("verify", self._parent._https_verify)
             reqmethod = getattr(requests, m)
 
             logger.debug(

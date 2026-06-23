@@ -45,6 +45,11 @@ class HandleClient(object):
                 self._handle_endpoint = "{0}/{1}".format(self._handle_endpoint, self._handle_prefix)
         self._handle_owner = kwargs.get("handleowner")
         self._admin_permissions = kwargs.get("admin_permissions", "011111110011")
+        # HTTPS_verify: True | False | path-to-CA-bundle. Defaults to True.
+        # Normalize None (missing, or passed explicitly e.g. from withConfig) to True,
+        # while preserving an explicit False or a CA-bundle path string.
+        verify = kwargs.get("HTTPS_verify")
+        self._https_verify = True if verify is None else verify
         self._handles: Optional[Handles] = None
 
     @classmethod
@@ -57,6 +62,13 @@ class HandleClient(object):
         try:
             with open(config_filename, 'r')as config_file:
                 j = json.loads(config_file.read())
+                # HTTPS_verify must NOT use the `or` idiom: an explicit False would be
+                # silently discarded. Prefer kwargs, fall back to file, else None
+                # (which __init__ normalizes to the default True).
+                if kwargs.get('HTTPS_verify') is not None:
+                    https_verify = kwargs.get('HTTPS_verify')
+                else:
+                    https_verify = j.get('HTTPS_verify')
                 return cls(
                         endpoint=kwargs.get('handle_server_url') or j.get('handle_server_url'),
                         prefix=kwargs.get('prefix') or j.get('prefix'),
@@ -66,7 +78,8 @@ class HandleClient(object):
                         certificate_only=kwargs.get('certificate_only') or j.get('certificate_only'),
                         certificate_and_key=kwargs.get('certificate_and_key') or j.get('certificate_and_key'),
                         handleowner=kwargs.get('handleowner') or j.get('handleowner'),
-                        admin_permissions=kwargs.get('admin_permissions') or j.get('admin_permissions')
+                        admin_permissions=kwargs.get('admin_permissions') or j.get('admin_permissions'),
+                        HTTPS_verify=https_verify
                         )
         except OSError as e:
             raise HandleException("Unable to load configuration file: {0}".format(repr(e)))
