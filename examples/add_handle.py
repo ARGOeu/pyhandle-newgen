@@ -4,6 +4,17 @@ from argparse import ArgumentParser
 
 from pyhandle_newgen import Handle, HandleClient, HandleServiceException
 
+
+def https_verify_arg(value):
+    """Parse --https-verify: 'true'/'false' (bool) or a path to a CA bundle file/dir."""
+    low = value.strip().lower()
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    return value
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Argo HANDLE.net fetch example")
     parser.add_argument(
@@ -18,6 +29,12 @@ if __name__ == "__main__":
     parser.add_argument("--owner", type=str, required=False, help="handle owner")
     parser.add_argument("--handle", type=str, required=True, help="handle")
     parser.add_argument("--url", type=str, required=True, help="handle url value")
+    parser.add_argument(
+        "--https-verify",
+        type=https_verify_arg,
+        default=True,
+        help="'true'/'false', or a path to a CA bundle file/dir. Defaults to true",
+    )
     parser.add_argument(
         "-f",
         help="treat password argument as a path to a file holding the actual password",
@@ -39,7 +56,8 @@ if __name__ == "__main__":
             "{0}/{1}".format(args.endpoint, args.prefix),
             username=args.username,
             password=password,
-            handleowner=args.owner
+            handleowner=args.owner,
+            HTTPS_verify=args.https_verify
             )
 
     try:
